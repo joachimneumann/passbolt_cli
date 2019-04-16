@@ -23,6 +23,7 @@
   "author": "contact@passbolt.com",
   "license": "AGPL-3.0",
   "dependencies": {
+    "ajv": "^6.10.0",
     "columnify": "^1.5.4",
     "commander": "^2.18.0",
     "flat": "^4.1.0",

@@ -1,0 +1,25 @@
+{
+  "domain": {
+    "baseUrl": "https://demo.passbolt.com/mindo-software",
+    "publicKey": {
+      "fingerprint": "D0FD7CAC3C1EF696E2CA7B04957363293F82447E"
+    }
+  },
+  "user": {
+    "firstname": "Joachim",
+    "lastname": "Neumann",
+    "email": "joachim@mindo.io",
+    "privateKey": {
+      "fingerprint": "7360132A8B972D6CD569CBBF899F6A749D1305B2"
+    }
+  },
+  "mfa": {
+    "providers": ["yubikey", "totp"]
+  },
+  "gpg": {
+    "trust": "always"
+  },
+  "agentOptions": {
+    "rejectUnauthorized": false
+  },
+}

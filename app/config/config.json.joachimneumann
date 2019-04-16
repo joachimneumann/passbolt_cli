@@ -1,0 +1,25 @@
+{
+  "domain": {
+    "baseUrl": "https://demo.passbolt.com/joachimneumann",
+    "publicKey": {
+      "fingerprint": "62A93BB37B4E513DABB7A2074A5BFB6C1DBEE42B"
+    }
+  },
+  "user": {
+    "firstname": "Joachim",
+    "lastname": "Neumann",
+    "email": "joachim@mindo.io",
+    "privateKey": {
+      "fingerprint": "7360132A8B972D6CD569CBBF899F6A749D1305B2"
+    }
+  },
+  "mfa": {
+    "providers": ["yubikey", "totp"]
+  },
+  "gpg": {
+    "trust": "always"
+  },
+  "agentOptions": {
+    "rejectUnauthorized": false
+  },
+}

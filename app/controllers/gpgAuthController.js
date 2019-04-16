@@ -4,15 +4,15 @@
  * @copyright (c) 2018 Passbolt SARL
  * @licence AGPL-3.0 http://www.gnu.org/licenses/agpl-3.0.en.html
  */
-const MfaController = require('./mfaController.js');
-const Compat = require('../lib/phpjs.js');
-const CookieStore = require('tough-cookie-file-store');
-const Crypto = require('../models/crypto.js');
-const GpgAuthToken = require('../models/gpgAuthToken.js');
-const GpgAuthHeader = require('../models/gpgAuthHeader.js');
-const i18n = require('../models/i18n.js');
-const path = require('path');
-const User = require('../models/user.js');
+const MfaController = require("./mfaController.js");
+const Compat = require("../lib/phpjs.js");
+const CookieStore = require("tough-cookie-file-store");
+const Crypto = require("../models/crypto.js");
+const GpgAuthToken = require("../models/gpgAuthToken.js");
+const GpgAuthHeader = require("../models/gpgAuthHeader.js");
+const i18n = require("../models/i18n.js");
+const path = require("path");
+const User = require("../models/user.js");
 
 class GpgAuthController extends MfaController {
   /**
@@ -39,7 +39,7 @@ class GpgAuthController extends MfaController {
     this.COOKIE_FILE = `${this.appDir}/app/tmp/cookie.json`;
     this.cookieStore = new CookieStore(this.COOKIE_FILE);
     this.cookieJar = this._request.jar(this.cookieStore);
-    this._request.defaults({jar: this.cookieJar});
+    this._request.defaults({ jar: this.cookieJar });
   }
 
   /**
@@ -52,11 +52,11 @@ class GpgAuthController extends MfaController {
       return true;
     }
     if (this.cookieStore.isEmpty()) {
-      this.log('No authentication cookie found', 'verbose');
+      this.log("No authentication cookie found", "verbose");
       return true;
     }
     if (this.cookieStore.isExpired()) {
-      this.log('Cookie is expired', 'verbose');
+      this.log("Cookie is expired", "verbose");
       return true;
     }
     try {
@@ -75,12 +75,15 @@ class GpgAuthController extends MfaController {
    */
   async verify() {
     this._generateVerifyToken();
-    const encrypted = await Crypto.encrypt(this.domain.publicKey.fingerprint, this.token);
+    const encrypted = await Crypto.encrypt(
+      this.domain.publicKey.fingerprint,
+      this.token
+    );
     const response = await this.post({
       url: this.URL_VERIFY,
       form: {
-        'data[gpg_auth][keyid]': this.user.privateKey.fingerprint,
-        'data[gpg_auth][server_verify_token]': encrypted
+        "data[gpg_auth][keyid]": this.user.privateKey.fingerprint,
+        "data[gpg_auth][server_verify_token]": encrypted
       }
     });
     return this._onVerifyResponse(response);
@@ -91,10 +94,11 @@ class GpgAuthController extends MfaController {
    */
   async loginIfNeeded() {
     let response = await this.checkStatus();
-
+    console.log("loginIfNeeded() response="+response);
+    console.log("loginIfNeeded() response.statusCode="+response.statusCode);
     // User already logged in no mfa required
     if (response.statusCode === 200) {
-      this.log('GPGAuth Skipping, you are already logged in', 'verbose');
+      this.log("GPGAuth Skipping, you are already logged in", "verbose");
       return true;
     }
 
@@ -105,7 +109,12 @@ class GpgAuthController extends MfaController {
     }
 
     // User not logged in
-    this.log(`GPGAuth login start with fingerprint ${this.user.privateKey.fingerprint}`, 'verbose');
+    this.log(
+      `GPGAuth login start with fingerprint ${
+        this.user.privateKey.fingerprint
+      }`,
+      "verbose"
+    );
     await this.login();
 
     // User is logged in but mfa required
@@ -119,8 +128,8 @@ class GpgAuthController extends MfaController {
   async getCsrfToken() {
     return new Promise((resolve, reject) => {
       const domain = this.domain.url.split("://").pop();
-      const path = '/';
-      const key = 'csrfToken';
+      const path = "/";
+      const key = "csrfToken";
 
       this.cookieStore.findCookie(domain, path, key, (error, cookie) => {
         if (cookie === null) {
@@ -138,15 +147,24 @@ class GpgAuthController extends MfaController {
    */
   async login() {
     try {
+      console.log("login()");
       await this.verify();
+      console.log("login() verify()");
       const userAuthToken = await this._stage1();
+      console.log("login() userAuthToken="+userAuthToken);
       const response = await this._stage2(userAuthToken);
-      const cookie = this._request.cookie(response.headers['set-cookie'][0]);
+      console.log("login() response="+response);
+      console.log("login() response.headers="+response.headers);
+      for (var key in response.headers) {
+        console.log("response.headers["+key+"] ="+response.headers[key]);
+      }
+      const cookie = this._request.cookie(response.headers["set-cookie"][0]);
+      console.log("login() cookie="+cookie);
       this.cookieJar.setCookie(cookie, this.domain.url);
-      this.log('GPGAuth you are now logged in', 'verbose');
+      this.log("GPGAuth you are now logged in", "verbose");
       return true;
     } catch (error) {
-      this.log('GPGAuth Error during login', 'verbose');
+      this.log("GPGAuth Error during login", "verbose");
       this.error(error);
     }
   }
@@ -160,7 +178,16 @@ class GpgAuthController extends MfaController {
         url: this.URL_LOGOUT,
         jar: this.cookieJar
       });
-      this._serverResponseHealthCheck('logout', response);
+      console.log("logout() response:")
+      for (var key in response) {
+        try {
+          console.log("response["+key+"]="+response[key]);
+        }
+        catch(err) {
+          console.log("response["+key+"] error:"+err.message);
+        }
+      }
+      this._serverResponseHealthCheck("logout", response);
       this._clearCookie();
       return true;
     } catch (error) {
@@ -178,10 +205,10 @@ class GpgAuthController extends MfaController {
       jar: this.cookieJar
     });
     const r = JSON.parse(response.body);
-    if (r.header.status === 'success') {
-      console.log('You are already logged in.');
+    if (r.header.status === "success") {
+      console.log("You are already logged in.");
     } else {
-      console.log('You are not logged in.');
+      console.log("You are not logged in. " + r.header.status);
     }
   }
 
@@ -194,7 +221,7 @@ class GpgAuthController extends MfaController {
    */
   _clearCookie() {
     try {
-      require('fs').unlinkSync(this.COOKIE_FILE);
+      require("fs").unlinkSync(this.COOKIE_FILE);
     } catch (e) {}
   }
 
@@ -247,21 +274,29 @@ class GpgAuthController extends MfaController {
   _serverResponseHealthCheck(step, response) {
     // Check if the HTTP status is OK
     if (response.statusCode !== 200) {
-      throw new Error(`${i18n.__('There was a problem when trying to communicate with the server')
-      } (HTTP Code:${response.status})`);
+      throw new Error(
+        `${i18n.__(
+          "There was a problem when trying to communicate with the server"
+        )} (HTTP Code:${response.status})`
+      );
     }
 
     // Check if there is GPGAuth error flagged by the server
-    if (response.headers['x-gpgauth-error']) {
-      throw new Error(i18n.__('The server rejected the verification request.') + response.headers['x-gpgauth-debug']);
+    if (response.headers["x-gpgauth-error"]) {
+      throw new Error(
+        i18n.__("The server rejected the verification request.") +
+          response.headers["x-gpgauth-debug"]
+      );
     }
 
     // Check if the headers are correct
     try {
       GpgAuthHeader.validateByStage(step, response.headers);
     } catch (error) {
-      this.log(error.message, 'verbose');
-      throw new Error(i18n.__('The server was unable to respect the authentication protocol.'));
+      this.log(error.message, "verbose");
+      throw new Error(
+        i18n.__("The server was unable to respect the authentication protocol.")
+      );
     }
 
     return true;
@@ -276,16 +311,24 @@ class GpgAuthController extends MfaController {
   _onVerifyResponse(response) {
     let token;
     try {
-      this._serverResponseHealthCheck('verify', response);
-      token = response.headers['x-gpgauth-verify-response'];
-      GpgAuthToken.validate('token', token);
+      this._serverResponseHealthCheck("verify", response);
+      token = response.headers["x-gpgauth-verify-response"];
+      GpgAuthToken.validate("token", token);
     } catch (error) {
-      console.log(error.message, 'verbose');
-      throw new Error(i18n.__('Error: GPGAuth verify step failed. Maybe your user does not exist or have been deleted.'));
+      console.log(error.message, "verbose");
+      throw new Error(
+        i18n.__(
+          "Error: GPGAuth verify step failed. Maybe your user does not exist or have been deleted."
+        )
+      );
     }
 
     if (!this.token || token !== this.token) {
-      throw new Error(i18n.__('Error: The server was unable to identify. GPGAuth tokens do not match.'));
+      throw new Error(
+        i18n.__(
+          "Error: The server was unable to identify. GPGAuth tokens do not match."
+        )
+      );
     }
     return response;
   }
@@ -299,19 +342,21 @@ class GpgAuthController extends MfaController {
     const response = await this.post({
       url: this.URL_LOGIN,
       form: {
-        'data[gpg_auth][keyid]': this.user.privateKey.fingerprint
+        "data[gpg_auth][keyid]": this.user.privateKey.fingerprint
       }
     });
-    await this._serverResponseHealthCheck('stage1', response);
+    await this._serverResponseHealthCheck("stage1", response);
 
     // cleanup the encrypted auth string & decrypt
-    const encryptedAuthToken = Compat.stripslashes(Compat.urldecode(response.headers['x-gpgauth-user-auth-token']));
+    const encryptedAuthToken = Compat.stripslashes(
+      Compat.urldecode(response.headers["x-gpgauth-user-auth-token"])
+    );
     let options;
     if (this.passphrase !== undefined) {
-      options = ['--passphrase', this.passphrase];
+      options = ["--passphrase", this.passphrase];
     }
     const userAuthToken = await Crypto.decrypt(encryptedAuthToken, options);
-    GpgAuthToken.validate('token', userAuthToken);
+    GpgAuthToken.validate("token", userAuthToken);
     return userAuthToken;
   }
 
@@ -325,11 +370,11 @@ class GpgAuthController extends MfaController {
     const response = await this.post({
       url: this.URL_LOGIN,
       form: {
-        'data[gpg_auth][keyid]': this.user.privateKey.fingerprint,
-        'data[gpg_auth][user_token_result]': userAuthToken
+        "data[gpg_auth][keyid]": this.user.privateKey.fingerprint,
+        "data[gpg_auth][user_token_result]": userAuthToken
       }
     });
-    await this._serverResponseHealthCheck('complete', response);
+    await this._serverResponseHealthCheck("complete", response);
     return response;
   }
 
@@ -343,15 +388,19 @@ class GpgAuthController extends MfaController {
     let body;
     try {
       // set cookies if needed
-      if (response.headers['set-cookie']) {
-        const cookie = this._request.cookie(response.headers['set-cookie'][0]);
+      if (response.headers["set-cookie"]) {
+        const cookie = this._request.cookie(response.headers["set-cookie"][0]);
         this.cookieJar.setCookie(cookie, this.domain.url);
       }
       // parse json body
       body = JSON.parse(response.body);
     } catch (syntaxError) {
-      this.log(response.body.toString(), 'verbose');
-      this.error(`${i18n.__('Error')} ${response.statusCode} ${i18n.__('could not parse server response.')}`);
+      this.log(response.body.toString(), "verbose");
+      this.error(
+        `${i18n.__("Error")} ${response.statusCode} ${i18n.__(
+          "could not parse server response."
+        )}`
+      );
       return;
     }
     return body;
